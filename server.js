@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs'); // 引入文件系统模块
 const app = express();
 const port = 3000;
 
@@ -9,12 +10,12 @@ app.use(express.json());
 
 //GET接口：返回JSON数据
 app.get('/api/baseJson', (req, res) => {
-    res.json({
-        users: [
-            { id: 1, name: "Alice" },
-            { id: 2, name: "Bob" },
-            { id: 3, name: "Carol" }
-        ]
+    fs.readFile('base.json', 'utf8', (err, data) => {
+        if (err) {
+            res.status(500).send('Unable to read file');
+            return;
+        }
+        res.status(200).json(JSON.parse(data));
     });
 });
 
@@ -27,7 +28,25 @@ app.get('/api/buhkBlockImei', (req, res) => {
         res.status(400).send('Name is required');
         return;
     }
-    res.status(200).send(`Received submission for name: ${name}`);
+    // 读取当前存储，然后添加新数据
+    fs.readFile('imei.json', 'utf8', (err, data) => {
+        if (err) {
+            res.status(500).send('Unable to read file');
+            return;
+        }
+
+        const submissions = JSON.parse(data);
+        submissions.push({ name: name });
+
+        // 写回文件
+        fs.writeFile('imei.json', JSON.stringify(submissions, null, 2), (err) => {
+            if (err) {
+                res.status(500).send('Unable to write file');
+                return;
+            }
+            res.status(200).send(`Received submission for name: ${name}`);
+        });
+    });
 });
 
 app.listen(port, () => {
